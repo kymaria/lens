@@ -35,7 +35,7 @@ export function createTerminalTab(tabParams: Partial<ITerminalTab> = {}) {
     kind: TabKind.TERMINAL,
     title: `Terminal`,
     ...tabParams
-  });
+  }, true);
 }
 
 @autobind()
