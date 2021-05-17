@@ -25,6 +25,7 @@ import Url from "url-parse";
 import type { LensExtension } from "../../extensions/lens-extension";
 import { broadcastMessage } from "../../common/ipc";
 import { observable, when } from "mobx";
+import { ProtocolHandlerInvalid, RouteAttempt } from "../../common/protocol-handler";
 
 export interface FallbackHandler {
   (name: string): Promise<boolean>;
@@ -42,7 +43,7 @@ export class LensProtocolRouterMain extends proto.LensProtocolRouter {
    * This will send an IPC message to the renderer router to do the same
    * in the renderer.
    */
-  public async route(rawUrl: string): Promise<void> {
+  public route(rawUrl: string) {
     try {
       const url = new Url(rawUrl, true);
 
@@ -54,16 +55,18 @@ export class LensProtocolRouterMain extends proto.LensProtocolRouter {
 
       switch (url.host) {
         case "app":
-          return this._routeToInternal(url);
+          this._routeToInternal(url);
+          break;
         case "extension":
-          await when(() => this.extensionsLoaded);
-
-          return this._routeToExtension(url);
+          this.disposers.push(when(() => this.extensionsLoaded, () => this._routeToExtension(url)));
+          break;
         default:
           throw new proto.RoutingError(proto.RoutingErrorType.INVALID_HOST, url);
       }
 
     } catch (error) {
+      broadcastMessage(ProtocolHandlerInvalid, error.toString(), rawUrl);
+
       if (error instanceof proto.RoutingError) {
         logger.error(`${proto.LensProtocolRouter.LoggingPrefix}: ${error}`, { url: error.url });
       } else {
@@ -96,17 +99,16 @@ export class LensProtocolRouterMain extends proto.LensProtocolRouter {
     return "";
   }
 
-  protected async _routeToInternal(url: Url): Promise<void> {
+  protected _routeToInternal(url: Url): RouteAttempt {
     const rawUrl = url.toString(); // for sending to renderer
+    const attempt = super._routeToInternal(url);
 
-    super._routeToInternal(url);
+    this.disposers.push(when(() => this.rendererLoaded, () => broadcastMessage(proto.ProtocolHandlerInternal, rawUrl, attempt)));
 
-    await when(() => this.rendererLoaded);
-
-    return broadcastMessage(proto.ProtocolHandlerInternal, rawUrl);
+    return attempt;
   }
 
-  protected async _routeToExtension(url: Url): Promise<void> {
+  protected async _routeToExtension(url: Url): Promise<RouteAttempt> {
     const rawUrl = url.toString(); // for sending to renderer
 
     /**
@@ -116,10 +118,11 @@ export class LensProtocolRouterMain extends proto.LensProtocolRouter {
      * Note: this needs to clone the url because _routeToExtension modifies its
      * argument.
      */
-    await super._routeToExtension(new Url(url.toString(), true));
-    await when(() => this.rendererLoaded);
+    const attempt = await super._routeToExtension(new Url(url.toString(), true));
 
-    return broadcastMessage(proto.ProtocolHandlerExtension, rawUrl);
+    this.disposers.push(when(() => this.rendererLoaded, () => broadcastMessage(proto.ProtocolHandlerExtension, rawUrl, attempt)));
+
+    return attempt;
   }
 
   /**

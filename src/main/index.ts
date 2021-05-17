@@ -90,8 +90,11 @@ if (!app.requestSingleInstanceLock()) {
 
   for (const arg of process.argv) {
     if (arg.toLowerCase().startsWith("lens://")) {
-      lprm.route(arg)
-        .catch(error => logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl: arg }));
+      try {
+        lprm.route(arg);
+      } catch (error) {
+        logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl: arg });
+      }
     }
   }
 }
@@ -101,8 +104,11 @@ app.on("second-instance", (event, argv) => {
 
   for (const arg of argv) {
     if (arg.toLowerCase().startsWith("lens://")) {
-      lprm.route(arg)
-        .catch(error => logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl: arg }));
+      try {
+        lprm.route(arg);
+      } catch (error) {
+        logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl: arg });
+      }
     }
   }
 
@@ -265,10 +271,11 @@ app.on("open-url", (event, rawUrl) => {
   // lens:// protocol handler
   event.preventDefault();
 
-  LensProtocolRouterMain
-    .getInstance()
-    .route(rawUrl)
-    .catch(error => logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl }));
+  try {
+    LensProtocolRouterMain.getInstance().route(rawUrl);
+  } catch (error) {
+    logger.error(`${LensProtocolRouterMain.LoggingPrefix}: an error occured`, { error, rawUrl });
+  }
 });
 
 // Extensions-api runtime exports
