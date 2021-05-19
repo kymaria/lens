@@ -27,7 +27,7 @@ import type { ClusterContext } from "../components/context";
 
 import plimit from "p-limit";
 import { comparer, observable, reaction, when } from "mobx";
-import { autobind, noop } from "../utils";
+import { autobind, Disposer, noop } from "../utils";
 import type { KubeApi } from "./kube-api";
 import type { KubeJsonApiData } from "./kube-json-api";
 import { isDebugging, isProduction } from "../../common/vars";
@@ -78,7 +78,7 @@ export class KubeWatchApi {
     };
   }
 
-  subscribeStores(stores: KubeObjectStore[], opts: IKubeWatchSubscribeStoreOptions = {}): () => void {
+  subscribeStores(stores: KubeObjectStore[], opts: IKubeWatchSubscribeStoreOptions = {}): Disposer {
     const { preload = true, waitUntilLoaded = true, loadOnce = false, } = opts;
     const subscribingNamespaces = opts.namespaces ?? this.context?.allNamespaces ?? [];
     const unsubscribeList: Function[] = [];
@@ -86,7 +86,7 @@ export class KubeWatchApi {
 
     const load = (namespaces = subscribingNamespaces) => this.preloadStores(stores, { namespaces, loadOnce });
     let preloading = preload && load();
-    let cancelReloading: () => void = noop;
+    let cancelReloading: Disposer = noop;
 
     const subscribe = () => {
       if (isUnsubscribed) return;
