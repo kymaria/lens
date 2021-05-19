@@ -61,7 +61,7 @@ export class LensProtocolRouterRenderer extends proto.LensProtocolRouter {
         if (foldAttemptResults(mainAttemptResult, rendererAttempt) === RouteAttempt.MISSING) {
           Notifications.info((
             <p>
-              Missing handler for <code>{rawUrl}</code>. Are you on the latest version?
+              Unknown action <code>{rawUrl}</code>. Are you on the latest version?
             </p>
           ), {
             timeout: 7_500,
@@ -80,7 +80,7 @@ export class LensProtocolRouterRenderer extends proto.LensProtocolRouter {
           case RouteAttempt.MISSING:
             Notifications.info((
               <p>
-                Missing handler for <code>{rawUrl}</code>. Are you on the latest version of the extensions?
+                Unknown action <code>{rawUrl}</code>. Are you on the latest version of the extension?
               </p>
             ), {
               timeout: 7_500,
@@ -89,7 +89,7 @@ export class LensProtocolRouterRenderer extends proto.LensProtocolRouter {
           case RouteAttempt.MISSING_EXTENSION:
             Notifications.info((
               <p>
-                Missing extension for <code>{rawUrl}</code>. Not able to find extension in our known list. Try installing it manually.
+                Missing extension for action <code>{rawUrl}</code>. Not able to find extension in our known list. Try installing it manually.
               </p>
             ), {
               timeout: 7_500,
