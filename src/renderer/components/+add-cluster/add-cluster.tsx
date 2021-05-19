@@ -21,7 +21,7 @@
 
 import "./add-cluster.scss";
 
-import { KubeConfig } from "@kubernetes/client-node";
+import type { KubeConfig } from "@kubernetes/client-node";
 import fse from "fs-extra";
 import { debounce } from "lodash";
 import { action, computed, observable } from "mobx";

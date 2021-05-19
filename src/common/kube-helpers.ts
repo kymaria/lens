@@ -267,7 +267,7 @@ export function getNodeWarningConditions(node: V1Node) {
  *
  * Note: This function returns an error instead of throwing it, returning `undefined` if the validation passes
  */
-export function validateKubeConfig(config: KubeConfig, contextName: string, validationOpts: KubeConfigValidationOpts = {}): Error | void {
+export function validateKubeConfig(config: KubeConfig, contextName: string, validationOpts: KubeConfigValidationOpts = {}): Error | undefined {
   try {
     // we only receive a single context, cluster & user object here so lets validate them as this
     // will be called when we add a new cluster to Lens
@@ -304,6 +304,8 @@ export function validateKubeConfig(config: KubeConfig, contextName: string, vali
         return new ExecValidationNotFoundError(execCommand, isAbsolute);
       }
     }
+
+    return undefined;
   } catch (error) {
     return error;
   }

@@ -29,7 +29,7 @@ import React from "react";
 import { clusterActivateHandler } from "../../../common/cluster-ipc";
 import { ClusterId, ClusterStore } from "../../../common/cluster-store";
 import { requestMain, subscribeToBroadcast } from "../../../common/ipc";
-import { Cluster } from "../../../main/cluster";
+import type { Cluster } from "../../../main/cluster";
 import { cssNames, IClassName } from "../../utils";
 import { Button } from "../button";
 import { Icon } from "../icon";
