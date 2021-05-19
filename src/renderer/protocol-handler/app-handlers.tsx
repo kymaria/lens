@@ -41,13 +41,12 @@ export function bindProtocolAddRouteHandlers() {
     })
     .addInternalHandler("/", ({ tail }) => {
       if (tail) {
-        Notifications.info((
+        Notifications.shortInfo(
           <p>
-            Missing handler for <code>lens://app/{tail}</code>. Are you on the latest version?
+            Unknown Action for <code>lens://app/{tail}</code>.{" "}
+            Are you on the latest version?
           </p>
-        ), {
-          timeout: 7_500,
-        });
+        );
       }
 
       navigate(catalogURL());
@@ -71,7 +70,11 @@ export function bindProtocolAddRouteHandlers() {
       if (entity) {
         navigate(entitySettingsURL({ params: { entityId } }));
       } else {
-        console.log("[APP-HANDLER]: catalog entity with given ID does not exist", { entityId });
+        Notifications.shortInfo(
+          <p>
+            Unknown catalog entity <code>{entityId}</code>.
+          </p>
+        );
       }
     })
     // Handlers below are deprecated and only kept for backward compact purposes
@@ -81,7 +84,11 @@ export function bindProtocolAddRouteHandlers() {
       if (cluster) {
         navigate(clusterViewURL({ params: { clusterId } }));
       } else {
-        console.log("[APP-HANDLER]: cluster with given ID does not exist", { clusterId });
+        Notifications.shortInfo(
+          <p>
+            Unknown catalog entity <code>{clusterId}</code>.
+          </p>
+        );
       }
     })
     .addInternalHandler("/cluster/:clusterId/settings", ({ pathname: { clusterId } }) => {
@@ -90,7 +97,11 @@ export function bindProtocolAddRouteHandlers() {
       if (cluster) {
         navigate(entitySettingsURL({ params: { entityId: clusterId } }));
       } else {
-        console.log("[APP-HANDLER]: cluster with given ID does not exist", { clusterId });
+        Notifications.shortInfo(
+          <p>
+            Unknown catalog entity <code>{clusterId}</code>.
+          </p>
+        );
       }
     })
     .addInternalHandler("/extensions", () => {

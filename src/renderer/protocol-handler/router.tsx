@@ -59,13 +59,12 @@ export class LensProtocolRouterRenderer extends proto.LensProtocolRouter {
         const rendererAttempt = this._routeToInternal(new Url(rawUrl, true));
 
         if (foldAttemptResults(mainAttemptResult, rendererAttempt) === RouteAttempt.MISSING) {
-          Notifications.info((
+          Notifications.shortInfo(
             <p>
-              Unknown action <code>{rawUrl}</code>. Are you on the latest version?
+              Unknown action <code>{rawUrl}</code>.{" "}
+              Are you on the latest version?
             </p>
-          ), {
-            timeout: 7_500,
-          });
+          );
         }
       }
     });
@@ -78,22 +77,21 @@ export class LensProtocolRouterRenderer extends proto.LensProtocolRouter {
 
         switch (foldAttemptResults(mainAttemptResult, rendererAttempt)) {
           case RouteAttempt.MISSING:
-            Notifications.info((
+            Notifications.shortInfo(
               <p>
-                Unknown action <code>{rawUrl}</code>. Are you on the latest version of the extension?
+                Unknown action <code>{rawUrl}</code>.{" "}
+                Are you on the latest version of the extension?
               </p>
-            ), {
-              timeout: 7_500,
-            });
+            );
             break;
           case RouteAttempt.MISSING_EXTENSION:
-            Notifications.info((
+            Notifications.shortInfo(
               <p>
-                Missing extension for action <code>{rawUrl}</code>. Not able to find extension in our known list. Try installing it manually.
+                Missing extension for action <code>{rawUrl}</code>.{" "}
+                Not able to find extension in our known list.{" "}
+                Try installing it manually.
               </p>
-            ), {
-              timeout: 7_500,
-            });
+            );
             break;
         }
       }
