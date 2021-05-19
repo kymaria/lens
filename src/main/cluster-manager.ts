@@ -29,35 +29,42 @@ import logger from "./logger";
 import { apiKubePrefix } from "../common/vars";
 import { Singleton } from "../common/utils";
 import { catalogEntityRegistry } from "./catalog";
-import { KubernetesCluster, KubernetesClusterPrometheusMetrics } from "../common/catalog-entities/kubernetes-cluster";
+import { KubernetesCluster } from "../common/catalog-entities/kubernetes-cluster";
 
 export class ClusterManager extends Singleton {
   constructor() {
     super();
 
-    reaction(() => toJS(ClusterStore.getInstance().clustersList, { recurseEverything: true }), () => {
-      this.updateCatalog(ClusterStore.getInstance().clustersList);
-    }, { fireImmediately: true });
+    this.disposers.push(
+      reaction(
+        () => toJS(ClusterStore.getInstance().clustersList, { recurseEverything: true }),
+        clusters => this.updateCatalog(clusters),
+        { fireImmediately: true },
+      ),
+      reaction(
+        () => catalogEntityRegistry.getItemsForApiKind<KubernetesCluster>("entity.k8slens.dev/v1alpha1", "KubernetesCluster"),
+        entities => this.syncClustersFromCatalog(entities)
+      ),
+      // auto-stop removed clusters
+      autorun(() => {
+        const removedClusters = Array.from(ClusterStore.getInstance().removedClusters.values());
 
-    reaction(() => catalogEntityRegistry.getItemsForApiKind<KubernetesCluster>("entity.k8slens.dev/v1alpha1", "KubernetesCluster"), (entities) => {
-      this.syncClustersFromCatalog(entities);
-    });
+        if (removedClusters.length > 0) {
+          const meta = removedClusters.map(cluster => cluster.getMeta());
 
-
-    // auto-stop removed clusters
-    autorun(() => {
-      const removedClusters = Array.from(ClusterStore.getInstance().removedClusters.values());
-
-      if (removedClusters.length > 0) {
-        const meta = removedClusters.map(cluster => cluster.getMeta());
-
-        logger.info(`[CLUSTER-MANAGER]: removing clusters`, meta);
-        removedClusters.forEach(cluster => cluster.disconnect());
-        ClusterStore.getInstance().removedClusters.clear();
+          logger.info(`[CLUSTER-MANAGER]: removing clusters`, meta);
+          removedClusters.forEach(cluster => cluster.disconnect());
+          ClusterStore.getInstance().removedClusters.clear();
+        }
+      }, {
+        delay: 250
+      }),
+      () => {
+        for (const cluster of ClusterStore.getInstance().clusters.values()) {
+          cluster.disconnect();
+        }
       }
-    }, {
-      delay: 250
-    });
+    );
 
     ipcMain.on("network:offline", () => { this.onNetworkOffline(); });
     ipcMain.on("network:online", () => { this.onNetworkOnline(); });
@@ -68,7 +75,7 @@ export class ClusterManager extends Singleton {
       const index = catalogEntityRegistry.items.findIndex((entity) => entity.metadata.uid === cluster.id);
 
       if (index !== -1) {
-        const entity = catalogEntityRegistry.items[index] as KubernetesCluster;
+        const entity = catalogEntityRegistry.items[index];
 
         entity.status.phase = cluster.disconnected ? "disconnected" : "connected";
         entity.status.active = !cluster.disconnected;
@@ -77,14 +84,12 @@ export class ClusterManager extends Singleton {
           entity.metadata.name = cluster.preferences.clusterName;
         }
 
-        entity.spec.metrics ||= { source: "local" };
+        entity.spec.metrics ??= { source: "local" };
 
         if (entity.spec.metrics.source === "local") {
-          const prometheus: KubernetesClusterPrometheusMetrics = entity.spec?.metrics?.prometheus || {};
-
-          prometheus.type = cluster.preferences.prometheusProvider?.type;
-          prometheus.address = cluster.preferences.prometheus;
-          entity.spec.metrics.prometheus = prometheus;
+          entity.spec.metrics.prometheus ??= {};
+          entity.spec.metrics.prometheus.type ??= cluster.preferences.prometheusProvider?.type;
+          entity.spec.metrics.prometheus.address = cluster.preferences.prometheus;
         }
 
         catalogEntityRegistry.items.splice(index, 1, entity);
@@ -134,12 +139,6 @@ export class ClusterManager extends Singleton {
       if (!cluster.disconnected) {
         cluster.refreshConnectionStatus().catch((e) => e);
       }
-    });
-  }
-
-  stop() {
-    ClusterStore.getInstance().clusters.forEach((cluster: Cluster) => {
-      cluster.disconnect();
     });
   }
 
